@@ -4,7 +4,8 @@ import json
 import re
 from PySide6.QtWidgets import (
     QApplication, QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QTextEdit,
-    QFileDialog, QTabWidget, QMessageBox, QLabel, QSizePolicy, QComboBox, QLineEdit
+    QFileDialog, QTabWidget, QMessageBox, QLabel, QSizePolicy, QComboBox, QLineEdit,
+    QSpinBox
 )
 from PySide6.QtCore import Qt, QObject, Signal
 from PySide6.QtGui import QPalette, QColor
@@ -115,7 +116,35 @@ class SplitTab(QWidget):
         input_layout.addWidget(self.path_input, 4)
         input_layout.addWidget(self.load_btn, 1)
         main_layout.addLayout(input_layout)
-        
+
+        # --- باکس تعداد خطوط ---
+        chunk_layout = QHBoxLayout()
+        chunk_layout.setSpacing(8)
+
+        self.chunk_label = QLabel()
+        self.chunk_label.setStyleSheet("font-size: 13px;")
+
+        self.chunk_spinbox = QSpinBox()
+        self.chunk_spinbox.setMinimum(1)
+        self.chunk_spinbox.setMaximum(100000)
+        self.chunk_spinbox.setValue(500)
+        self.chunk_spinbox.setFixedWidth(110)
+        self.chunk_spinbox.setStyleSheet("""
+            QSpinBox {
+                border: 2px solid #3d3d3d; border-radius: 6px;
+                padding: 6px 8px; font-size: 13px; font-weight: bold;
+            }
+            QSpinBox::up-button, QSpinBox::down-button {
+                width: 20px;
+            }
+        """)
+
+        chunk_layout.addWidget(self.chunk_label)
+        chunk_layout.addWidget(self.chunk_spinbox)
+        chunk_layout.addStretch()
+        main_layout.addLayout(chunk_layout)
+        # --- پایان باکس ---
+
         self.process_btn = QPushButton()
         self.process_btn.setCursor(Qt.PointingHandCursor)
         self.process_btn.setStyleSheet("""
@@ -147,6 +176,7 @@ class SplitTab(QWidget):
         self.load_btn.setText(lang_mgr.t("open_file_btn"))
         self.process_btn.setText(lang_mgr.t("process_split_btn"))
         self.path_input.setPlaceholderText(lang_mgr.t("split_placeholder"))
+        self.chunk_label.setText(lang_mgr.t("chunk_size_label"))
 
     def dragEnterEvent(self, event):
         if event.mimeData().hasUrls():
@@ -185,7 +215,7 @@ class SplitTab(QWidget):
                 lines = f.readlines()
             
             total_lines = len(lines)
-            chunk_size = 500
+            chunk_size = self.chunk_spinbox.value()   # ← مقدار از SpinBox
             part_num = 1
             
             for i in range(0, total_lines, chunk_size):
@@ -312,7 +342,6 @@ class MergeTab(QWidget):
         
         try:
             self.log_area.clear()
-            # ریجکس هوشمند: اسم کل فایل مهم نیست، فقط به پسوند انتهای پارت _part_XXX حساسه
             pattern = re.compile(r".*_part_(\d+)\.(txt|json)$", re.IGNORECASE)
             valid_files = []
             
@@ -327,7 +356,6 @@ class MergeTab(QWidget):
                 QMessageBox.warning(self, lang_mgr.t("warning_title"), lang_mgr.t("no_parts_found"))
                 return
             
-            # مرتب سازی امن ریاضی بر اساس ساختار عددی پارت‌ها
             valid_files.sort(key=lambda x: x[0])
             _, first_ext = os.path.splitext(valid_files[0][2])
             
@@ -347,7 +375,7 @@ class MergeTab(QWidget):
 
 
 # ==========================================
-# پنجره اصلی (به همراه سیستم تغییر تم چشمی)
+# پنجره اصلی
 # ==========================================
 class MainWindow(QWidget):
     def __init__(self):
@@ -384,8 +412,6 @@ class MainWindow(QWidget):
         main_layout.addLayout(top_bar)
         
         self.tabs = QTabWidget()
-        
-        # ادغام تب‌های جدید تقسیم و اتصال
         self.tabs.addTab(SplitTab(), "")
         self.tabs.addTab(MergeTab(), "")
         
