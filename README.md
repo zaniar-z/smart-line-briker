@@ -1,4 +1,4 @@
-# 📄 Smart Line Briker
+# 📄 Smart Line Breaker
 
 A simple and efficient tool for splitting and merging text files, built with Python and PySide6.
 
